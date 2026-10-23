@@ -1,0 +1,14 @@
+{
+  "name": "yuque-local-mcp",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Local Yuque MCP with cookie authentication and version-checked writes",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node test.cjs && node test-writes.cjs",
+    "setup": "node setup.cjs"
+  }
+}
