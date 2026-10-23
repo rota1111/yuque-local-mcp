@@ -36,6 +36,7 @@ const client={
  doc.body_asl='<!doctype lake><p>one</p><p>two</p>';doc.body_draft_asl=doc.body_asl;
  await assert.rejects(w.prepare({operation:'replace_text',url:docUrl,old_text:'onetwo',markdown:'new'}),/匹配数：0/);
  doc.body_asl=original;doc.body_draft_asl=original;
+ messages=[];
  const preview=await w.prepare({operation:'append',url:docUrl,markdown:'Appended'});
  assert.equal(messages.filter(m=>m.url.endsWith('/content')).length,0,'preview must not save content');
  const applied=await w.apply(preview.plan_id);assert.equal(applied.status,'verified');assert.ok(doc.body_asl.startsWith(original));assert.ok(doc.body_asl.includes('Appended'));assert.equal((doc.body_asl.match(/doctype lake/g)||[]).length,1);
