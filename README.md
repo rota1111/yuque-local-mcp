@@ -13,7 +13,13 @@ cd yuque-local-mcp
 
 ## 2. 配置登录凭证
 
-在浏览器中登录语雀，打开开发者工具，在 Cookie 存储区域找到语雀域名，复制 `_yuque_session` 的值。
+在浏览器中登录语雀，打开开发者工具：
+
+1. 点击 **Application（应用）** 面板；如果没有显示，在顶部 **`»`** 中查找。
+2. 在左侧 **Storage（存储）→ Cookies** 下，选择当前语雀域名。
+3. 找到 `_yuque_session`，复制对应的 **Value（值）**。
+
+部分浏览器将 Cookie 管理放在独立的 **Storage（存储）** 面板中。
 
 运行：
 
