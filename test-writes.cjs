@@ -23,6 +23,25 @@ const client={
 };
 (async()=>{try{
  const w=createWriter(root,client);
+ const sectionPrefix='<!doctype lake><meta name="doc-version" content="1" /><p>Intro</p><h2 id="keep">背景</h2>';
+ const sectionOld='<p>Old body</p><h3>Old subsection</h3><p>More</p>';
+ const sectionSuffix='<h2>Next</h2><card name="keep" /><table><tr><td>Keep</td></tr></table>';
+ doc.body_asl=sectionPrefix+sectionOld+sectionSuffix;doc.body_draft_asl=doc.body_asl;
+ const sectionBefore=doc.body_asl,callCount=messages.filter(m=>m.url.endsWith('/content')).length;
+ const sectionPlan=await w.prepare({operation:'replace_section',url:docUrl,section_heading:'背景',markdown:'Rewritten section'});
+ assert.equal(doc.body_asl,sectionBefore);
+ assert.equal(messages.filter(m=>m.url.endsWith('/content')).length,callCount);
+ assert.equal(sectionPlan.section.heading,'背景');
+ assert.equal(sectionPlan.section.old_lake_preview,sectionOld);
+ assert.equal((await w.apply(sectionPlan.plan_id)).status,'verified');
+ assert.equal(doc.body_asl,sectionPrefix+'<p>Rewritten section</p>'+sectionSuffix);
+ const sectionStale=await w.prepare({operation:'replace_section',url:docUrl,section_heading:'背景',markdown:'Stale'});
+ doc.draft_version++;
+ await assert.rejects(w.apply(sectionStale.plan_id),/版本已变化/);
+ const beforeInvalid=messages.length;
+ await assert.rejects(w.prepare({operation:'replace_section',url:docUrl,section_heading:'Missing',markdown:'No'}),/未找到/);
+ assert.ok(!messages.slice(beforeInvalid).some(m=>m.method!=='GET'));
+ doc.body_asl=original;doc.body_draft_asl=original;
  const untouched=doc.body_asl;
  await assert.rejects(w.prepare({operation:'replace_text',url:docUrl,old_text:'missing',markdown:'new'}),/匹配数：0/);
  const local=await w.prepare({operation:'replace_text',url:docUrl,old_text:'Original',markdown:'New <safe> & $&'});

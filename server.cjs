@@ -18,7 +18,7 @@ const client = createClient(root);
 const writer = require('./writes.cjs').createWriter(root,client);
 async function readPage(address) { return client.read(url(address)); }
 const specs = [
-  ['yuque_prepare_write', '预览创建、追加、整篇替换或局部文字替换。replace_text 需 old_text 唯一匹配单个文本节点，markdown 此时作为纯文本新值，不解析格式；不支持跨节点。其他操作输入Markdown，返回15分钟有效的一次性plan_id；此步骤不修改文档。替换会覆盖全部正文，必须符合用户请求。', {operation:{type:'string',enum:['create','append','replace','replace_text']},url:{type:'string'},title:{type:'string'},old_text:{type:'string'},markdown:{type:'string'}}],
+  ['yuque_prepare_write', '预览创建(create)、追加(append)、整篇替换(replace)、章节重写(replace_section)或文字替换(replace_text)。章节重写用 section_heading 精确指定原标题，重名时用 section_occurrence 指定第几个；保留该标题，替换到下一个同级或更高级标题前的全部内容（包含子章节），markdown 只填新正文，不重复目标标题。其他章节原样保留。replace_text 用 old_text 唯一匹配单个文本节点，markdown 按纯文本处理。其余操作支持Markdown。返回15分钟有效的一次性plan_id，预览不修改文档。', {operation:{type:'string',enum:['create','append','replace','replace_text','replace_section']},url:{type:'string'},title:{type:'string'},old_text:{type:'string'},section_heading:{type:'string'},section_occurrence:{type:'integer',minimum:1},markdown:{type:'string'}}],
   ['yuque_apply_write', '执行预览过的一次性计划：检查版本、备份、写入并发布回读。仅在用户已授权目标和内容时调用。unknown_or_partial不能自动重试。', {plan_id:{type:'string'}}],
   ['yuque_list_books', '发现自有个人知识库，可选择 remember=true 保存入口。团队和受邀知识库需单独添加。', {remember:{type:'boolean'}}],
   ['yuque_list_docs', '使用网页登录 Cookie 读取知识库目录，不启动浏览器。', {url:{type:'string'}}],

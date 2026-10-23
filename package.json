@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server.cjs",
-    "test": "node test.cjs && node test-writes.cjs",
+    "test": "node test.cjs && node test-sections.cjs && node test-writes.cjs",
     "setup": "node setup.cjs"
   }
 }
