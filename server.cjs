@@ -18,7 +18,7 @@ const client = createClient(root);
 const writer = require('./writes.cjs').createWriter(root,client);
 async function readPage(address) { return client.read(url(address)); }
 const specs = [
-  ['yuque_prepare_write', '预览创建、追加或整篇替换文档。输入Markdown，返回15分钟有效的一次性plan_id；此步骤不修改文档。替换会覆盖全部正文，必须符合用户请求。', {operation:{type:'string',enum:['create','append','replace']},url:{type:'string'},title:{type:'string'},markdown:{type:'string'}}],
+  ['yuque_prepare_write', '预览创建、追加、整篇替换或局部文字替换。replace_text 需 old_text 唯一匹配单个文本节点，markdown 此时作为纯文本新值，不解析格式；不支持跨节点。其他操作输入Markdown，返回15分钟有效的一次性plan_id；此步骤不修改文档。替换会覆盖全部正文，必须符合用户请求。', {operation:{type:'string',enum:['create','append','replace','replace_text']},url:{type:'string'},title:{type:'string'},old_text:{type:'string'},markdown:{type:'string'}}],
   ['yuque_apply_write', '执行预览过的一次性计划：检查版本、备份、写入并发布回读。仅在用户已授权目标和内容时调用。unknown_or_partial不能自动重试。', {plan_id:{type:'string'}}],
   ['yuque_list_books', '发现自有个人知识库，可选择 remember=true 保存入口。团队和受邀知识库需单独添加。', {remember:{type:'boolean'}}],
   ['yuque_list_docs', '使用网页登录 Cookie 读取知识库目录，不启动浏览器。', {url:{type:'string'}}],

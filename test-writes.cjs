@@ -23,6 +23,19 @@ const client={
 };
 (async()=>{try{
  const w=createWriter(root,client);
+ const untouched=doc.body_asl;
+ await assert.rejects(w.prepare({operation:'replace_text',url:docUrl,old_text:'missing',markdown:'new'}),/匹配数：0/);
+ const local=await w.prepare({operation:'replace_text',url:docUrl,old_text:'Original',markdown:'New <safe> & $&'});
+ assert.equal(doc.body_asl,untouched);
+ assert.equal((await w.apply(local.plan_id)).status,'verified');
+ assert.equal(doc.body_asl,untouched.replace('Original',()=> 'New &lt;safe&gt; &amp; $&amp;'));
+ doc.body_asl=original;doc.body_draft_asl=original;
+ const repeated='<!doctype lake><p>same same</p>';
+ doc.body_asl=repeated;doc.body_draft_asl=repeated;
+ await assert.rejects(w.prepare({operation:'replace_text',url:docUrl,old_text:'same',markdown:'new'}),/匹配数：2/);
+ doc.body_asl='<!doctype lake><p>one</p><p>two</p>';doc.body_draft_asl=doc.body_asl;
+ await assert.rejects(w.prepare({operation:'replace_text',url:docUrl,old_text:'onetwo',markdown:'new'}),/匹配数：0/);
+ doc.body_asl=original;doc.body_draft_asl=original;
  const preview=await w.prepare({operation:'append',url:docUrl,markdown:'Appended'});
  assert.equal(messages.filter(m=>m.url.endsWith('/content')).length,0,'preview must not save content');
  const applied=await w.apply(preview.plan_id);assert.equal(applied.status,'verified');assert.ok(doc.body_asl.startsWith(original));assert.ok(doc.body_asl.includes('Appended'));assert.equal((doc.body_asl.match(/doctype lake/g)||[]).length,1);

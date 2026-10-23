@@ -20,7 +20,7 @@ function createWriter(root,client){
   }
   const fingerprint=s=>hash([s.id,s.title,s.lake,s.draft_version,s.updated_at]);
   async function prepare(a){
-    if(!['create','append','replace'].includes(a.operation)||!text(a.markdown))throw new Error('需要 create/append/replace 和非空 Markdown（最多50万字符）');
+    if(!['create','append','replace','replace_text'].includes(a.operation)||!text(a.markdown))throw new Error('需要 create/append/replace/replace_text 和非空 Markdown（最多50万字符）');
     const u=safeUrl(a.url);const parts=u.pathname.split('/').filter(Boolean);
     if(parts.length!==(a.operation==='create'?2:3))throw new Error('创建需要知识库URL；追加/替换需要文档URL');
     let before,book;
@@ -30,13 +30,29 @@ function createWriter(root,client){
       if(!book?.id)throw new Error('未找到目标知识库');
       const list=await client.listDocs(u.href);if(list.documents.some(d=>d.title===a.title))throw new Error('已有同名文档，请先定位它');
     }else before=await snapshot(u.href);
-    const payload=await client.request(u.origin+'/api/docs/convert',true,{method:'POST',body:{content:a.markdown,from:'markdown',to:'lake'}});
-    const converted=payload.data?.content;if(typeof converted!=='string'||!/^<!doctype lake>/i.test(converted))throw new Error('Markdown 转换未返回有效Lake');
-    const next=a.operation==='append'?before.lake+converted.replace(/^<!doctype lake>/i,'').replace(/<meta\b[^>]*\/>/gi,''):converted;
+    let next;
+    if(a.operation==='replace_text'){
+      if(!text(a.old_text))throw new Error('局部替换需要非空 old_text');
+      const escape=value=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const needle=escape(a.old_text),replacement=escape(a.markdown);
+      // Only text nodes may change; never replace attributes or Lake markup.
+      let matches=0;
+      const chunks=before.lake.split(/(<[^>]*>)/g);
+      for(let i=0;i<chunks.length;i+=2){
+        let at=chunks[i].indexOf(needle);
+        while(at!==-1){matches++;at=chunks[i].indexOf(needle,at+1);}
+      }
+      if(matches!==1)throw new Error('原文必须在单个文本节点中唯一匹配；当前匹配数：'+matches+'。跨段落或格式节点的文字请缩小范围');
+      next=chunks.map((chunk,i)=>i%2?chunk:chunk.replace(needle,()=>replacement)).join('');
+    }else{
+      const payload=await client.request(u.origin+'/api/docs/convert',true,{method:'POST',body:{content:a.markdown,from:'markdown',to:'lake'}});
+      const converted=payload.data?.content;if(typeof converted!=='string'||!/^<!doctype lake>/i.test(converted))throw new Error('Markdown 转换未返回有效Lake');
+      next=a.operation==='append'?before.lake+converted.replace(/^<!doctype lake>/i,'').replace(/<meta\b[^>]*\/>/gi,''):converted;
+    }
     const id=crypto.randomUUID(),slug='mcp-'+crypto.randomBytes(10).toString('hex');
     const plan={id,status:'prepared',created_at:Date.now(),binding:binding(),operation:a.operation,url:u.href,title:a.operation==='create'?a.title:before.title,markdown:a.markdown,lake:next,before,book_id:book?.id||before.book_id,slug};
     store(path.join(directory,id+'.json'),plan);
-    return {plan_id:id,operation:plan.operation,url:plan.url,title:plan.title,expires_in_seconds:900,before_fingerprint:before?fingerprint(before):null,markdown_preview:a.markdown.slice(0,4000),characters:a.markdown.length,note:'尚未修改语雀文档。apply_write将保存本地备份并发布内容到原知识库；不改变分享权限。'};
+    return {plan_id:id,operation:plan.operation,url:plan.url,title:plan.title,expires_in_seconds:900,before_fingerprint:before?fingerprint(before):null,old_text_preview:a.operation==='replace_text'?a.old_text.slice(0,4000):undefined,markdown_preview:a.markdown.slice(0,4000),characters:a.markdown.length,note:'尚未修改语雀文档。apply_write将保存本地备份并发布内容到原知识库；不改变分享权限。'};
   }
   async function apply(id){
     if(!/^[0-9a-f-]{36}$/.test(id))throw new Error('无效plan_id');

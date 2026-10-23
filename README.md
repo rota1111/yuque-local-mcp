@@ -63,7 +63,11 @@ npm run setup
 | `yuque_web_search` | 在指定知识库中在线搜索 |
 | `yuque_sync` | 同步知识库文档到本地 |
 | `yuque_search` | 搜索已读取或同步的本地文档 |
-| `yuque_prepare_write` | 预览创建、追加或替换文档 |
+| `yuque_prepare_write` | 预览创建、追加、整篇替换或局部文字替换 |
 | `yuque_apply_write` | 执行写入计划 |
 
 凭证和文档缓存保存在 `private/`，请勿上传或分享该目录。
+
+局部修改可直接说：“把这篇文档中的‘原文字’改为‘新文字’，先给我看预览。”
+
+局部替换使用 `yuque_prepare_write` 的 `replace_text` 操作，`old_text` 填原文，`markdown` 填新文字（按纯文本处理）。原文必须在单个富文本节点中唯一匹配；跨段落或格式节点时需缩小范围。底层仍通过全文保存接口提交，沿用版本检查、备份和写后核对。
